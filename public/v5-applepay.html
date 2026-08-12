@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Standard Checkout — JS SDK v5 Radio (PayPal + Card) + Basic Apple Pay (v6)</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    .method-picker {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+      border: none;
+      padding: 0;
+    }
+    .method-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+    .method-option:has(input:checked) {
+      border-color: #0070ba;
+      box-shadow: 0 0 0 1px #0070ba;
+    }
+    .method-option:has(input:disabled) {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .method-option input {
+      margin: 0;
+      flex-shrink: 0;
+    }
+    .mark-slot {
+      height: 24px;
+      display: flex;
+      align-items: center;
+    }
+    .mark-slot img {
+      height: 100%;
+      width: auto;
+    }
+    .method-label {
+      font-size: 1rem;
+      font-weight: 400;
+    }
+    apple-pay-mark {
+      display: block;
+      height: 24px;
+      width: auto;
+      position: relative;
+      top: -7px;
+    }
+    #paypal-button-container,
+    #card-button-container {
+      margin-top: 4px;
+    }
+    #applepay-button {
+      display: none;
+      width: 100%;
+      height: 55px;
+      margin-top: 4px;
+      border: none;
+      border-radius: 6px;
+      background: #000;
+      color: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    #applepay-button:disabled {
+      background: #888;
+      cursor: not-allowed;
+    }
+    #applepay-note {
+      color: #888;
+      font-size: 0.8rem;
+      margin: 4px 0 0;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 6px;
+      background: #f6f6f6;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 0.8rem;
+      display: none;
+    }
+    #status {
+      color: #666;
+      font-size: 0.85rem;
+    }
+    .product {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+      margin: 0 auto 20px;
+    }
+    .product-image {
+      flex-shrink: 0;
+    }
+    .product-info h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .product-info p {
+      margin: 2px 0 0;
+      color: #666;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="product">
+    <svg class="product-image" width="88" height="88" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="T-shirt">
+      <rect width="100" height="100" rx="16" fill="#eef2fb" />
+      <path d="M35 12 L50 20 L65 12 L82 22 L74 38 L66 34 L66 88 L34 88 L34 34 L26 38 L18 22 Z" fill="#5b8def" stroke="#2f5fc4" stroke-width="2" stroke-linejoin="round" />
+    </svg>
+    <div class="product-info">
+      <h2>Classic Cotton Tee</h2>
+      <p>$10.00 USD</p>
+    </div>
+  </div>
+
+  <!-- Integration Variation 1.2: Radio Button from v5 (PayPal + Card) along with Apple Pay Mark from V6 -->
+  <fieldset class="method-picker" id="method-picker">
+    <label class="method-option">
+      <input type="radio" name="payment-method" value="paypal" id="method-paypal" checked />
+      <span class="mark-slot" id="mark-paypal"></span>
+    </label>
+    <label class="method-option">
+      <input type="radio" name="payment-method" value="card" id="method-card" />
+      <span class="mark-slot" id="mark-card"></span>
+      <span class="method-label">Credit and debit cards</span>
+    </label>
+    <label class="method-option" id="applepay-option" hidden>
+      <input type="radio" name="payment-method" value="applepay" id="method-applepay" />
+      <apple-pay-mark id="apple-pay-mark"></apple-pay-mark>
+    </label>
+  </fieldset>
+
+  <div id="paypal-button-container"></div>
+  <div id="card-button-container"></div>
+  <button id="applepay-button">Checkout with Apple Pay</button>
+  <p id="applepay-note" hidden></p>
+
+  <p id="status">Loading SDKs…</p>
+  <div id="result"></div>
+
+  <script>
+    function showResult(text) {
+      const result = document.getElementById("result");
+      result.style.display = "block";
+      result.textContent = text;
+    }
+
+    function setStatus(text) {
+      document.getElementById("status").textContent = text;
+    }
+
+    function setApplePayNote(text) {
+      const note = document.getElementById("applepay-note");
+      note.hidden = !text;
+      note.textContent = text;
+    }
+
+    async function createOrder() {
+      const res = await fetch("/api/orders", { method: "POST" });
+      const order = await res.json();
+      return order.id;
+    }
+
+    async function captureOrder(orderId) {
+      const res = await fetch(`/api/orders/${orderId}/capture`, { method: "POST" });
+      const details = await res.json();
+      showResult(JSON.stringify(details, null, 2));
+    }
+
+    async function getClientToken() {
+      const res = await fetch("/api/client-token");
+      const { access_token } = await res.json();
+      return access_token;
+    }
+
+    // Step 1 — Load the v5 SDK and the v6 SDK (core + brand) side by side,
+    // using data-namespace so the two SDKs don't collide on `window.paypal`.
+    function loadScript(src, namespace) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = src;
+        if (namespace) script.setAttribute("data-namespace", namespace);
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`Failed to load ${src}`));
+        document.body.appendChild(script);
+      });
+    }
+
+    function selectMethod(method) {
+      document.getElementById("paypal-button-container").style.display = method === "paypal" ? "block" : "none";
+      document.getElementById("card-button-container").style.display = method === "card" ? "block" : "none";
+      document.getElementById("applepay-button").style.display = method === "applepay" ? "block" : "none";
+    }
+
+    function renderPayPalButton(clientId) {
+      window.paypalV5
+        .Buttons({
+          style: { height: 55 },
+          fundingSource: window.paypalV5.FUNDING.PAYPAL,
+          createOrder,
+          onApprove: async (data) => {
+            await captureOrder(data.orderID);
+          },
+          onError: (err) => showResult("Error: " + err),
+        })
+        .render("#paypal-button-container");
+    }
+
+    function renderCardButton(clientId) {
+      window.paypalV5
+        .Buttons({
+          style: { height: 55 },
+          fundingSource: window.paypalV5.FUNDING.CARD,
+          createOrder,
+          onApprove: async (data) => {
+            await captureOrder(data.orderID);
+          },
+          onError: (err) => showResult("Error: " + err),
+        })
+        .render("#card-button-container");
+    }
+
+    // Real SDK-provided marks, via v5's paypal.Marks() component — one per funding source.
+    function renderMarks() {
+      const paypalMark = window.paypalV5.Marks({ fundingSource: window.paypalV5.FUNDING.PAYPAL });
+      if (paypalMark.isEligible()) {
+        paypalMark.render("#mark-paypal");
+      } else {
+        document.getElementById("method-paypal").disabled = true;
+      }
+
+      const cardMark = window.paypalV5.Marks({ fundingSource: window.paypalV5.FUNDING.CARD });
+      if (cardMark.isEligible()) {
+        cardMark.render("#mark-card");
+      } else {
+        document.getElementById("method-card").disabled = true;
+      }
+    }
+
+    async function initV6ApplePay() {
+      // Step 2 — Get a client token from the backend
+      const clientToken = await getClientToken();
+      const clientMetadataId = crypto.randomUUID();
+
+      // Step 3 — Create a v6 SDK instance with the applepay-payments component
+      const sdkInstance = await window.paypalV6.createInstance({
+        clientToken,
+        clientMetadataId,
+        components: ["applepay-payments"],
+      });
+
+      // Step 4 — Check Apple Pay eligibility
+      const eligibility = await sdkInstance.findEligibleMethods({
+        currencyCode: "USD",
+      });
+      if (!eligibility.isEligible("basic_apple_pay")) {
+        setApplePayNote("Apple Pay is not eligible for this merchant/currency in sandbox.");
+        return;
+      }
+
+      // Step 5 — Create the Basic Apple Pay payment session
+      const applePayPaymentSession = sdkInstance.createBasicApplePayOneTimePaymentSession({
+        onApprove: async ({ orderId }) => {
+          await captureOrder(orderId);
+        },
+        onCancel: () => setStatus("Apple Pay payment cancelled."),
+        onError: (error) => showResult("Error: " + (error.message || error)),
+      });
+
+      // Step 6 — Confirm device/browser support
+      const canMakePayments = await applePayPaymentSession.canMakePayments();
+      if (!canMakePayments) {
+        setApplePayNote("Apple Pay is not available on this device/browser.");
+        return;
+      }
+
+      document.getElementById("applepay-option").hidden = false;
+
+      // Step 7 — Apple Pay Mark is display-only; a separate button triggers checkout
+      const button = document.getElementById("applepay-button");
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          const checkoutSessionOptionsPromise = createOrder().then((orderId) => ({ orderId }));
+          await applePayPaymentSession.start({}, checkoutSessionOptionsPromise);
+        } catch (error) {
+          showResult("Error: " + (error.message || error));
+        } finally {
+          button.disabled = false;
+        }
+      });
+    }
+
+    async function main() {
+      const configRes = await fetch("/api/config");
+      const { clientId } = await configRes.json();
+
+      await Promise.all([
+        loadScript(`https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&components=buttons,marks`, "paypalV5"),
+        loadScript("https://www.sandbox.paypal.com/web-sdk/v6/core", "paypalV6"),
+        loadScript("https://www.sandbox.paypal.com/web-sdk/v6/brand"),
+      ]);
+
+      renderMarks();
+      renderPayPalButton(clientId);
+      renderCardButton(clientId);
+      selectMethod("paypal");
+      setStatus("");
+
+      document.querySelectorAll('input[name="payment-method"]').forEach((radio) => {
+        radio.addEventListener("change", () => selectMethod(radio.value));
+      });
+
+      try {
+        await initV6ApplePay();
+      } catch (error) {
+        showResult("Error initializing Apple Pay: " + (error.message || error));
+      }
+    }
+
+    main();
+  </script>
+  <script>
+    function reportHeightToParent() {
+      window.parent.postMessage(
+        { type: "checkout-demo-resize", height: document.documentElement.scrollHeight },
+        window.location.origin
+      );
+    }
+    new ResizeObserver(reportHeightToParent).observe(document.documentElement);
+    window.addEventListener("load", reportHeightToParent);
+  </script>
+</body>
+</html>

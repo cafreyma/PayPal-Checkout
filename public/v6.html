@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Standard Checkout — JS SDK v6</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    #button-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+    }
+    paypal-button, paypal-basic-card-container {
+      display: block;
+      width: 100%;
+    }
+    paypal-basic-card-button {
+      display: block;
+      width: 100%;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 6px;
+      background: #f6f6f6;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 0.8rem;
+      display: none;
+    }
+    #status {
+      color: #666;
+      font-size: 0.85rem;
+    }
+    .product {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+      margin: 0 auto 20px;
+    }
+    .product-image {
+      flex-shrink: 0;
+    }
+    .product-info h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .product-info p {
+      margin: 2px 0 0;
+      color: #666;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="product">
+    <svg class="product-image" width="88" height="88" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="T-shirt">
+      <rect width="100" height="100" rx="16" fill="#eef2fb" />
+      <path d="M35 12 L50 20 L65 12 L82 22 L74 38 L66 34 L66 88 L34 88 L34 34 L26 38 L18 22 Z" fill="#5b8def" stroke="#2f5fc4" stroke-width="2" stroke-linejoin="round" />
+    </svg>
+    <div class="product-info">
+      <h2>Classic Cotton Tee</h2>
+      <p>$10.00 USD</p>
+    </div>
+  </div>
+  <div id="button-stack">
+    <paypal-button hidden></paypal-button>
+    <paypal-basic-card-container hidden>
+      <paypal-basic-card-button id="guest-card-button"></paypal-basic-card-button>
+    </paypal-basic-card-container>
+  </div>
+  <p id="status">Loading SDK…</p>
+  <div id="result"></div>
+
+  <script>
+    function showResult(text) {
+      const result = document.getElementById("result");
+      result.style.display = "block";
+      result.textContent = text;
+    }
+
+    function setStatus(text) {
+      document.getElementById("status").textContent = text;
+    }
+
+    async function createOrder() {
+      const res = await fetch("/api/orders", { method: "POST" });
+      const order = await res.json();
+      return { orderId: order.id };
+    }
+
+    async function captureOrder({ orderId }) {
+      const res = await fetch(`/api/orders/${orderId}/capture`, { method: "POST" });
+      const details = await res.json();
+      showResult(JSON.stringify(details, null, 2));
+    }
+
+    async function main() {
+      const configRes = await fetch("/api/config");
+      const { clientId } = await configRes.json();
+
+      const script = document.createElement("script");
+      script.src = "https://www.sandbox.paypal.com/web-sdk/v6/core";
+      script.onload = () => init(clientId);
+      document.body.appendChild(script);
+    }
+
+    async function init(clientId) {
+      const sdkInstance = await window.paypal.createInstance({
+        clientId,
+        components: ["paypal-payments", "paypal-guest-payments"],
+        pageType: "checkout",
+      });
+
+      const eligibility = await sdkInstance.findEligibleMethods({
+        currencyCode: "USD",
+      });
+
+      let anyEligible = false;
+
+      if (eligibility.isEligible("paypal")) {
+        anyEligible = true;
+        const button = document.querySelector("paypal-button");
+        button.hidden = false;
+
+        const paypalSession = sdkInstance.createPayPalOneTimePaymentSession({
+          onApprove: async (data) => {
+            await captureOrder(data);
+          },
+          onCancel: () => setStatus("Payment cancelled."),
+          onError: (error) => showResult("Error: " + error),
+        });
+
+        button.addEventListener("click", async () => {
+          await paypalSession.start({ presentationMode: "auto" }, createOrder());
+        });
+      }
+
+      if (eligibility.isEligible("card")) {
+        anyEligible = true;
+        const cardContainer = document.querySelector("paypal-basic-card-container");
+        const cardButton = document.getElementById("guest-card-button");
+        cardContainer.hidden = false;
+
+        const guestSession = await sdkInstance.createPayPalGuestOneTimePaymentSession({
+          onApprove: async (data) => {
+            await captureOrder(data);
+          },
+          onComplete: () => setStatus("Payment complete."),
+          onError: (error) => showResult("Error: " + (error.message || error)),
+        });
+
+        cardButton.addEventListener("click", async () => {
+          await guestSession.start({ presentationMode: "auto" }, createOrder());
+        });
+      }
+
+      setStatus(anyEligible ? "" : "No payment methods eligible for this buyer/currency in sandbox.");
+    }
+
+    main();
+  </script>
+  <script>
+    function reportHeightToParent() {
+      window.parent.postMessage(
+        { type: "checkout-demo-resize", height: document.documentElement.scrollHeight },
+        window.location.origin
+      );
+    }
+    new ResizeObserver(reportHeightToParent).observe(document.documentElement);
+    window.addEventListener("load", reportHeightToParent);
+  </script>
+</body>
+</html>

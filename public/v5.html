@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Standard Checkout — JS SDK v5</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    #paypal-button-container {
+      margin-top: 4px;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 6px;
+      background: #f6f6f6;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 0.8rem;
+      display: none;
+    }
+    #status {
+      color: #666;
+      font-size: 0.85rem;
+    }
+    .product {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+      margin: 0 auto 20px;
+    }
+    .product-image {
+      flex-shrink: 0;
+    }
+    .product-info h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .product-info p {
+      margin: 2px 0 0;
+      color: #666;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="product">
+    <svg class="product-image" width="88" height="88" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="T-shirt">
+      <rect width="100" height="100" rx="16" fill="#eef2fb" />
+      <path d="M35 12 L50 20 L65 12 L82 22 L74 38 L66 34 L66 88 L34 88 L34 34 L26 38 L18 22 Z" fill="#5b8def" stroke="#2f5fc4" stroke-width="2" stroke-linejoin="round" />
+    </svg>
+    <div class="product-info">
+      <h2>Classic Cotton Tee</h2>
+      <p>$10.00 USD</p>
+    </div>
+  </div>
+
+  <div id="paypal-button-container"></div>
+  <p id="status"></p>
+  <div id="result"></div>
+
+  <script>
+    function showResult(text) {
+      const result = document.getElementById("result");
+      result.style.display = "block";
+      result.textContent = text;
+    }
+
+    function setStatus(text) {
+      document.getElementById("status").textContent = text;
+    }
+
+    async function createOrder() {
+      const res = await fetch("/api/orders", { method: "POST" });
+      const order = await res.json();
+      return order.id;
+    }
+
+    async function captureOrder(orderId) {
+      const res = await fetch(`/api/orders/${orderId}/capture`, { method: "POST" });
+      const details = await res.json();
+      showResult(JSON.stringify(details, null, 2));
+    }
+
+    async function main() {
+      const configRes = await fetch("/api/config");
+      const { clientId } = await configRes.json();
+
+      const script = document.createElement("script");
+      script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&components=buttons`;
+      script.onload = init;
+      document.body.appendChild(script);
+    }
+
+    // No radio picker — paypal.Buttons() with no fundingSource renders the
+    // full smart button set (PayPal, Card, etc.) as separate buttons.
+    function init() {
+      paypal
+        .Buttons({
+          style: { height: 55 },
+          createOrder,
+          onApprove: async (data) => {
+            await captureOrder(data.orderID);
+          },
+          onError: (err) => showResult("Error: " + err),
+        })
+        .render("#paypal-button-container");
+    }
+
+    main();
+  </script>
+  <script>
+    function reportHeightToParent() {
+      window.parent.postMessage(
+        { type: "checkout-demo-resize", height: document.documentElement.scrollHeight },
+        window.location.origin
+      );
+    }
+    new ResizeObserver(reportHeightToParent).observe(document.documentElement);
+    window.addEventListener("load", reportHeightToParent);
+  </script>
+</body>
+</html>
