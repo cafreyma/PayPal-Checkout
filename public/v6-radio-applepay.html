@@ -67,18 +67,15 @@
     .card-form[hidden] {
       display: none;
     }
-    #card-name {
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      padding: 10px 12px;
-      font-size: 0.95rem;
-      font-family: inherit;
-    }
+    #card-name,
     .card-field {
       border: 1px solid #ccc;
       border-radius: 6px;
       padding: 4px 8px;
       height: 44px;
+      box-sizing: border-box;
+      font-size: 0.95rem;
+      font-family: inherit;
     }
     .card-row {
       display: flex;
@@ -319,41 +316,51 @@
       }
 
       // Step 5 — Create the Basic Apple Pay payment session
-      if (eligibility.isEligible("basic_apple_pay")) {
-        const applePayPaymentSession = sdkInstance.createBasicApplePayOneTimePaymentSession({
-          onApprove: async ({ orderId }) => {
-            await captureOrder(orderId);
-          },
-          onCancel: () => setStatus("Apple Pay payment cancelled."),
-          onError: (error) => showResult("Error: " + (error.message || error)),
-        });
-
-        // Step 6 — Confirm device/browser support before showing the mark
-        const canMakePayments = await applePayPaymentSession.canMakePayments();
-        if (canMakePayments) {
-          anyEligible = true;
-          defaultMethod = defaultMethod || "applepay";
-          document.getElementById("applepay-option").hidden = false;
-
-          // Step 7 — Apple Pay Mark is display-only; a separate button triggers checkout
-          const button = document.getElementById("applepay-button");
-          button.addEventListener("click", async () => {
-            button.disabled = true;
-            try {
-              const checkoutSessionOptionsPromise = createOrder().then(({ orderId }) => ({ orderId }));
-              await applePayPaymentSession.start({}, checkoutSessionOptionsPromise);
-            } catch (error) {
-              showResult("Error: " + (error.message || error));
-            } finally {
-              button.disabled = false;
-            }
-          });
-        } else {
-          setApplePayNote("Apple Pay is not available on this device/browser.");
-        }
-      } else {
-        setApplePayNote("Apple Pay is not eligible for this merchant/currency in sandbox.");
+      // NOTE: forced visible for demo purposes even when isEligible()/canMakePayments() fail —
+      // normally you should gate session creation and rendering on both checks.
+      if (!eligibility.isEligible("basic_apple_pay")) {
+        setApplePayNote("Apple Pay is not eligible for this merchant/currency in sandbox (forced visible for demo).");
       }
+
+      const applePayPaymentSession = sdkInstance.createBasicApplePayOneTimePaymentSession({
+        onApprove: async ({ orderId }) => {
+          await captureOrder(orderId);
+        },
+        onCancel: () => setStatus("Apple Pay payment cancelled."),
+        onError: (error) => showResult("Error: " + (error.message || error)),
+      });
+
+      // Step 6 — Confirm device/browser support before showing the mark
+      // NOTE: canMakePayments() throws (rather than resolving false) when the
+      // page isn't served over HTTPS. Caught here so the option still shows
+      // for demo purposes — it won't actually be able to start a session.
+      let canMakePayments = false;
+      try {
+        canMakePayments = await applePayPaymentSession.canMakePayments();
+      } catch (error) {
+        setApplePayNote("Apple Pay check failed (forced visible for demo): " + (error.message || error));
+      }
+      if (!canMakePayments) {
+        setApplePayNote("Apple Pay is not available on this device/browser (forced visible for demo).");
+      }
+
+      anyEligible = true;
+      defaultMethod = defaultMethod || "applepay";
+      document.getElementById("applepay-option").hidden = false;
+
+      // Step 7 — Apple Pay Mark is display-only; a separate button triggers checkout
+      const button = document.getElementById("applepay-button");
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          const checkoutSessionOptionsPromise = createOrder().then(({ orderId }) => ({ orderId }));
+          await applePayPaymentSession.start({}, checkoutSessionOptionsPromise);
+        } catch (error) {
+          showResult("Error: " + (error.message || error));
+        } finally {
+          button.disabled = false;
+        }
+      });
 
       document.querySelectorAll('input[name="payment-method"]').forEach((radio) => {
         radio.addEventListener("change", () => selectMethod(radio.value));
@@ -389,9 +396,10 @@
       const cardSession = sdkInstance.createCardFieldsOneTimePaymentSession();
 
       // v6 Card Fields only supports number/expiry/cvv — cardholder name is a plain input, not an SDK field
-      const numberField = cardSession.createCardFieldsComponent({ type: "number", placeholder: "Card number" });
-      const expiryField = cardSession.createCardFieldsComponent({ type: "expiry", placeholder: "MM/YY" });
-      const cvvField = cardSession.createCardFieldsComponent({ type: "cvv", placeholder: "CVV" });
+      const fieldStyle = { input: { border: "none", borderRadius: "0", padding: "0" } };
+      const numberField = cardSession.createCardFieldsComponent({ type: "number", placeholder: "Card number", style: fieldStyle });
+      const expiryField = cardSession.createCardFieldsComponent({ type: "expiry", placeholder: "MM/YY", style: fieldStyle });
+      const cvvField = cardSession.createCardFieldsComponent({ type: "cvv", placeholder: "CVV", style: fieldStyle });
 
       document.getElementById("card-number").appendChild(numberField);
       document.getElementById("card-expiry").appendChild(expiryField);

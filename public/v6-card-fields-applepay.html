@@ -32,18 +32,15 @@
       gap: 10px;
       width: 100%;
     }
-    #card-name {
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      padding: 10px 12px;
-      font-size: 0.95rem;
-      font-family: inherit;
-    }
+    #card-name,
     .card-field {
       border: 1px solid #ccc;
       border-radius: 6px;
       padding: 4px 8px;
       height: 44px;
+      box-sizing: border-box;
+      font-size: 0.95rem;
+      font-family: inherit;
     }
     .card-row {
       display: flex;
@@ -338,9 +335,10 @@
       const cardSession = sdkInstance.createCardFieldsOneTimePaymentSession();
 
       // v6 Card Fields only supports number/expiry/cvv — cardholder name is a plain input, not an SDK field
-      const numberField = cardSession.createCardFieldsComponent({ type: "number", placeholder: "Card number" });
-      const expiryField = cardSession.createCardFieldsComponent({ type: "expiry", placeholder: "MM/YY" });
-      const cvvField = cardSession.createCardFieldsComponent({ type: "cvv", placeholder: "CVV" });
+      const fieldStyle = { input: { border: "none", borderRadius: "0", padding: "0" } };
+      const numberField = cardSession.createCardFieldsComponent({ type: "number", placeholder: "Card number", style: fieldStyle });
+      const expiryField = cardSession.createCardFieldsComponent({ type: "expiry", placeholder: "MM/YY", style: fieldStyle });
+      const cvvField = cardSession.createCardFieldsComponent({ type: "cvv", placeholder: "CVV", style: fieldStyle });
 
       document.getElementById("card-number").appendChild(numberField);
       document.getElementById("card-expiry").appendChild(expiryField);

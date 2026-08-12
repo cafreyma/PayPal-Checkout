@@ -268,12 +268,13 @@
       });
 
       // Step 4 — Check Apple Pay eligibility
+      // NOTE: forced visible for demo purposes even when isEligible() fails —
+      // normally you should return early here and not render the button/mark.
       const eligibility = await sdkInstance.findEligibleMethods({
         currencyCode: "USD",
       });
       if (!eligibility.isEligible("basic_apple_pay")) {
-        setApplePayNote("Apple Pay is not eligible for this merchant/currency in sandbox.");
-        return;
+        setApplePayNote("Apple Pay is not eligible for this merchant/currency in sandbox (forced visible for demo).");
       }
 
       // Step 5 — Create the Basic Apple Pay payment session
@@ -286,10 +287,17 @@
       });
 
       // Step 6 — Confirm device/browser support
-      const canMakePayments = await applePayPaymentSession.canMakePayments();
+      // NOTE: canMakePayments() throws (rather than resolving false) when the
+      // page isn't served over HTTPS. Caught here so the option still shows
+      // for demo purposes — it won't actually be able to start a session.
+      let canMakePayments = false;
+      try {
+        canMakePayments = await applePayPaymentSession.canMakePayments();
+      } catch (error) {
+        setApplePayNote("Apple Pay check failed (forced visible for demo): " + (error.message || error));
+      }
       if (!canMakePayments) {
-        setApplePayNote("Apple Pay is not available on this device/browser.");
-        return;
+        setApplePayNote("Apple Pay is not available on this device/browser (forced visible for demo).");
       }
 
       document.getElementById("applepay-option").hidden = false;

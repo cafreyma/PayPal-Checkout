@@ -9,15 +9,6 @@
       margin: 0;
       padding: 20px;
     }
-    #apple-pay-mark {
-      display: block;
-      margin-bottom: 10px;
-    }
-    apple-pay-mark {
-      display: block;
-      width: 100%;
-      height: 44px;
-    }
     #applepay-button {
       display: block;
       width: 100%;
@@ -81,7 +72,6 @@
     </div>
   </div>
 
-  <apple-pay-mark id="apple-pay-mark" hidden></apple-pay-mark>
   <button id="applepay-button" hidden>Checkout with Apple Pay</button>
 
   <p id="status">Loading SDK…</p>
@@ -144,12 +134,13 @@
         });
 
         // Step 4 — Check Apple Pay eligibility
+        // NOTE: forced visible for demo purposes even when isEligible()/canMakePayments() fail —
+        // normally you should gate session creation and rendering on both checks.
         const eligibility = await sdkInstance.findEligibleMethods({
           currencyCode: "USD",
         });
         if (!eligibility.isEligible("basic_apple_pay")) {
-          setStatus("Apple Pay is not eligible for this merchant/currency in sandbox.");
-          return;
+          setStatus("Apple Pay is not eligible for this merchant/currency in sandbox (forced visible for demo).");
         }
 
         // Step 5 — Create the Basic Apple Pay payment session
@@ -163,17 +154,22 @@
         });
 
         // Step 6 — Confirm device/browser support
-        const canMakePayments = await applePayPaymentSession.canMakePayments();
+        // NOTE: canMakePayments() throws (rather than resolving false) when the page
+        // isn't served over HTTPS. Caught here so the button still shows for demo
+        // purposes — it won't actually be able to start a session.
+        let canMakePayments = false;
+        try {
+          canMakePayments = await applePayPaymentSession.canMakePayments();
+        } catch (error) {
+          setStatus("Apple Pay check failed (forced visible for demo): " + (error.message || error));
+        }
         if (!canMakePayments) {
-          setStatus("Apple Pay is not available on this device/browser.");
-          return;
+          setStatus("Apple Pay is not available on this device/browser (forced visible for demo).");
         }
 
-        const mark = document.getElementById("apple-pay-mark");
         const button = document.getElementById("applepay-button");
-        mark.hidden = false;
         button.hidden = false;
-        setStatus("");
+        if (canMakePayments) setStatus("");
 
         // Step 7 — Render button; on click, create an order and start the session
         button.addEventListener("click", async () => {
