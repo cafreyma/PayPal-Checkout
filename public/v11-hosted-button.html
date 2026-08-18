@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Payment Links and Buttons</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    .product {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+      margin: 0 auto 20px;
+    }
+    .product-image {
+      flex-shrink: 0;
+    }
+    #paypal-container-B9D2MM8KZRLB6 {
+      max-width: 300px;
+      margin: 4px auto 0;
+    }
+  </style>
+  <script
+    src="https://www.paypal.com/sdk/js?client-id=BAAUY9bqA7px76gi62vQ1U9EfC3p-k2FJlyzo88hjU9sXUa8WvGPbtiSRDLk4sVBB2nE5MgX9SNd2_XfaE&components=hosted-buttons&disable-funding=venmo&currency=USD">
+  </script>
+</head>
+<body>
+  <div class="product">
+    <svg class="product-image" width="88" height="88" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="T-shirt">
+      <rect width="100" height="100" rx="16" fill="#eef2fb" />
+      <path d="M35 12 L50 20 L65 12 L82 22 L74 38 L66 34 L66 88 L34 88 L34 34 L26 38 L18 22 Z" fill="#5b8def" stroke="#2f5fc4" stroke-width="2" stroke-linejoin="round" />
+    </svg>
+  </div>
+
+  <div id="paypal-container-B9D2MM8KZRLB6"></div>
+  <script>
+    paypal.HostedButtons({
+      hostedButtonId: "B9D2MM8KZRLB6",
+    }).render("#paypal-container-B9D2MM8KZRLB6")
+  </script>
+
+  <script>
+    function reportHeightToParent() {
+      window.parent.postMessage(
+        { type: "checkout-demo-resize", height: document.documentElement.scrollHeight },
+        window.location.origin
+      );
+    }
+    new ResizeObserver(reportHeightToParent).observe(document.documentElement);
+    window.addEventListener("load", reportHeightToParent);
+  </script>
+</body>
+</html>
