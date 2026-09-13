@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PayPal Checkout Demo</title>
+  <style>
+    :root {
+      --ink: #12161c;
+      --muted: #667085;
+      --line: #dfe3e8;
+      --brand: #0070ba;
+      --ok: #067647;
+      --ok-bg: #ecfdf3;
+      --ok-line: #abefc6;
+      --danger: #b42318;
+      --danger-bg: #fef3f2;
+      --danger-line: #fda29b;
+      --warn: #93601a;
+      --warn-bg: #fffaeb;
+      --warn-line: #fedf89;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--ink);
+      background: #f6f7f9;
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+      line-height: 1.5;
+    }
+    a { color: var(--brand); }
+    header.page { margin-bottom: 22px; }
+    header.page h1 { font-size: 1.4rem; margin: 0 0 4px; }
+    header.page p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+    .env-banner {
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.875rem;
+      margin-bottom: 20px;
+      border: 1px solid;
+    }
+    .env-banner strong { display: block; margin-bottom: 2px; font-size: 0.95rem; }
+    .env-banner.sandbox { background: #f2f9fd; border-color: #a9d8f2; color: #0b4f76; }
+    .env-banner.live { background: var(--danger-bg); border-color: var(--danger-line); color: var(--danger); }
+    .order-summary {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+    .order-summary h2 { margin: 0; font-size: 1rem; }
+    .order-summary p { margin: 2px 0 0; color: var(--muted); font-size: 0.85rem; }
+    .order-summary .price { margin-left: auto; text-align: right; }
+    .order-summary .price b { font-size: 1.35rem; display: block; }
+    .order-summary .price span { color: var(--muted); font-size: 0.8rem; }
+    .variants { display: grid; gap: 20px; grid-template-columns: 1fr; }
+    @media (min-width: 860px) { .variants { grid-template-columns: 1fr 1fr; } }
+    .variant {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .variant > header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfbfc;
+    }
+    .variant > header h2 { margin: 0; font-size: 1rem; }
+    .variant > header p { margin: 4px 0 0; color: var(--muted); font-size: 0.82rem; }
+    .badge {
+      display: inline-block;
+      min-width: 1.5em;
+      margin-right: 8px;
+      padding: 1px 7px;
+      border-radius: 4px;
+      background: var(--brand);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      vertical-align: middle;
+    }
+    .variant-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+    .marks-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-height: 26px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .mark-slot { height: 24px; display: flex; align-items: center; }
+    .mark-slot img { height: 100%; width: auto; }
+    .mark-slot svg { height: 20px; width: auto; }
+    apple-pay-mark { display: block; height: 24px; width: auto; }
+    .button-stack { display: flex; flex-direction: column; gap: 12px; }
+    .button-stack > * { width: 100%; }
+    .applepay-button {
+      height: 52px;
+      border: none;
+      border-radius: 6px;
+      background: #000;
+      color: #fff;
+      font: inherit;
+      font-size: 1.05rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .applepay-button:disabled { background: #8a8a8a; cursor: not-allowed; }
+    paypal-button, paypal-basic-card-button {
+      display: block;
+      width: 100%;
+      cursor: pointer;
+    }
+    .note {
+      font-size: 0.8rem;
+      border-radius: 8px;
+      padding: 9px 12px;
+      margin: 12px 0 0;
+      border: 1px solid;
+    }
+    .note.warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn); }
+    .note.error { background: var(--danger-bg); border-color: var(--danger-line); color: var(--danger); }
+    .note.info { background: #f4f6f8; border-color: var(--line); color: var(--muted); }
+    .status { font-size: 0.85rem; color: var(--muted); margin: 14px 0 0; min-height: 1.2em; }
+    .status.success { color: var(--ok); font-weight: 600; }
+    .result {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #f4f6f8;
+      border: 1px solid var(--line);
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.72rem;
+      max-height: 260px;
+      overflow: auto;
+    }
+    .result.success { background: var(--ok-bg); border-color: var(--ok-line); }
+    .result.error { background: var(--danger-bg); border-color: var(--danger-line); }
+    .steps {
+      margin: 18px 0 0;
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: #fbfbfc;
+    }
+    .steps code { font-size: 0.72rem; }
+    footer.page { margin-top: 28px; font-size: 0.85rem; color: var(--muted); }
+    footer.page a { margin-right: 16px; }
+  </style>
+</head>
+<body>
+  <header class="page">
+    <h1>PayPal Checkout Demo</h1>
+    <p>PayPal, Credit / Debit Card and Basic Apple Pay — two independent integrations of the same order.</p>
+  </header>
+
+  <div class="env-banner" id="env-banner" hidden></div>
+
+  <div class="order-summary">
+    <svg width="48" height="48" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="T-shirt">
+      <rect width="100" height="100" rx="16" fill="#eef2fb" />
+      <path d="M35 12 L50 20 L65 12 L82 22 L74 38 L66 34 L66 88 L34 88 L34 34 L26 38 L18 22 Z"
+            fill="#5b8def" stroke="#2f5fc4" stroke-width="2" stroke-linejoin="round" />
+    </svg>
+    <div>
+      <h2>Classic Cotton Tee</h2>
+      <p>One T-shirt, one order per payment method.</p>
+    </div>
+    <div class="price">
+      <b id="summary-amount">—</b>
+      <span id="summary-currency">SGD</span>
+    </div>
+  </div>
+
+  <div class="variants">
+    <!-- ============ Variant A: v5 for PayPal + Card, v6 for Apple Pay ============ -->
+    <section class="variant" id="variant-a">
+      <header>
+        <h2><span class="badge">A</span>JS SDK v5 + v6</h2>
+        <p>PayPal &amp; Card buttons from <code>v5</code>; Basic Apple Pay from <code>v6</code>
+           (<code>applepay-payments</code>), loaded side by side with <code>data-namespace</code>.</p>
+      </header>
+      <div class="variant-body">
+        <div class="marks-row">
+          <div class="mark-slot" id="a-paypal-mark"></div>
+          <div class="mark-slot" id="a-card-mark"></div>
+          <apple-pay-mark id="a-apple-pay-mark" hidden></apple-pay-mark>
+        </div>
+        <div class="button-stack">
+          <div id="a-paypal-button"></div>
+          <div id="a-card-button"></div>
+          <button type="button" class="applepay-button" id="a-applepay-button" hidden>
+            Checkout with Apple&nbsp;Pay
+          </button>
+        </div>
+        <p class="note" id="a-note" hidden></p>
+        <p class="status" id="a-status">Loading SDKs…</p>
+        <pre class="result" id="a-result" hidden></pre>
+      </div>
+      <div class="steps">
+        v5 <code>Buttons({ fundingSource: PAYPAL | CARD })</code> &middot;
+        v6 <code>createBasicApplePayOneTimePaymentSession()</code>
+      </div>
+    </section>
+
+    <!-- ============ Variant B: v6 for all three ============ -->
+    <section class="variant" id="variant-b">
+      <header>
+        <h2><span class="badge">B</span>JS SDK v6 only</h2>
+        <p>All three methods from <code>v6</code>: <code>paypal-payments</code>,
+           <code>paypal-guest-payments</code> and <code>applepay-payments</code>
+           on a single SDK instance.</p>
+      </header>
+      <div class="variant-body">
+        <div class="marks-row">
+          <!-- v6 ships no PayPal/Card brand marks, so these two are drawn locally.
+               Only <apple-pay-mark> is a real SDK-provided element (brand bundle). -->
+          <div class="mark-slot" id="b-paypal-mark" hidden>
+            <svg viewBox="0 0 80 20" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="PayPal">
+              <text x="0" y="15" font-family="-apple-system, Segoe UI, sans-serif" font-size="15"
+                    font-weight="700" font-style="italic" fill="#003087">Pay</text>
+              <text x="31" y="15" font-family="-apple-system, Segoe UI, sans-serif" font-size="15"
+                    font-weight="700" font-style="italic" fill="#009cde">Pal</text>
+            </svg>
+          </div>
+          <div class="mark-slot" id="b-card-mark" hidden>
+            <svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Credit or debit card">
+              <rect x="0.5" y="0.5" width="29" height="19" rx="3" fill="#fff" stroke="#999" />
+              <rect x="0.5" y="4.5" width="29" height="3" fill="#555" />
+              <rect x="3" y="12" width="10" height="2.5" rx="1" fill="#bbb" />
+            </svg>
+          </div>
+          <apple-pay-mark id="b-apple-pay-mark" hidden></apple-pay-mark>
+        </div>
+        <div class="button-stack">
+          <paypal-button id="b-paypal-button" hidden></paypal-button>
+          <paypal-basic-card-container id="b-card-container" hidden>
+            <paypal-basic-card-button id="b-card-button"></paypal-basic-card-button>
+          </paypal-basic-card-container>
+          <button type="button" class="applepay-button" id="b-applepay-button" hidden>
+            Checkout with Apple&nbsp;Pay
+          </button>
+        </div>
+        <p class="note" id="b-note" hidden></p>
+        <p class="status" id="b-status">Loading SDK…</p>
+        <pre class="result" id="b-result" hidden></pre>
+      </div>
+      <div class="steps">
+        v6 <code>createPayPalOneTimePaymentSession()</code> &middot;
+        <code>createPayPalGuestOneTimePaymentSession()</code> &middot;
+        <code>createBasicApplePayOneTimePaymentSession()</code>
+      </div>
+    </section>
+  </div>
+
+  <footer class="page">
+    <a href="/">← Change environment or amount</a>
+    <a href="/compare.html">Older v5 vs v6 comparison page</a>
+  </footer>
+
+  <script>
+    // ------------------------------------------------------------------
+    // Checkout context, read from the landing page's query string.
+    // ------------------------------------------------------------------
+    const query = new URLSearchParams(window.location.search);
+    const ENV = query.get("env") === "live" || query.get("env") === "production" ? "live" : "sandbox";
+    // ?force=1 renders the Apple Pay mark/button even when the guide's
+    // eligibility + canMakePayments gates fail, for diagnosing a device or
+    // merchant-config problem. Off by default.
+    const FORCE_APPLE_PAY = query.get("force") === "1";
+
+    const MIN_AMOUNT = 0.01;
+    const MAX_AMOUNT = 10.0;
+
+    function parseAmount(raw) {
+      const value = Number.parseFloat(raw);
+      if (!Number.isFinite(value)) return null;
+      const rounded = Math.round(value * 100) / 100;
+      if (rounded < MIN_AMOUNT || rounded > MAX_AMOUNT) return null;
+      return rounded.toFixed(2);
+    }
+
+    const AMOUNT = parseAmount(query.get("amount"));
+    if (AMOUNT === null) {
+      // No usable amount — send the buyer back to pick one.
+      window.location.replace("/");
+    }
+
+    // ------------------------------------------------------------------
+    // Small UI helpers, scoped per variant ("a" / "b").
+    // ------------------------------------------------------------------
+    function setStatus(prefix, text, isSuccess) {
+      const el = document.getElementById(prefix + "-status");
+      el.textContent = text || "";
+      el.classList.toggle("success", Boolean(isSuccess));
+    }
+
+    function setNote(prefix, text, kind) {
+      const el = document.getElementById(prefix + "-note");
+      el.hidden = !text;
+      el.textContent = text || "";
+      el.className = "note " + (kind || "info");
+    }
+
+    function showResult(prefix, data, kind) {
+      const el = document.getElementById(prefix + "-result");
+      el.hidden = false;
+      el.className = "result " + (kind || "");
+      el.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+    }
+
+    function describeError(error) {
+      if (!error) return "Unknown error";
+      if (typeof error === "string") return error;
+      return error.message || String(error);
+    }
+
+    // ------------------------------------------------------------------
+    // Backend calls. Every call carries the environment; the amount is
+    // re-validated server side before the order is created.
+    // ------------------------------------------------------------------
+    async function apiJson(path, options) {
+      const separator = path.includes("?") ? "&" : "?";
+      const res = await fetch(path + separator + "env=" + ENV, options);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(data.error || "Request failed with " + res.status);
+        err.details = data.details;
+        throw err;
+      }
+      return data;
+    }
+
+    // Returns the raw order ID (what v5's createOrder callback expects).
+    async function createOrderId() {
+      const order = await apiJson("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: AMOUNT }),
+      });
+      if (!order.id) throw new Error("Order creation returned no id");
+      return order.id;
+    }
+
+    // v6 sessions want { orderId }.
+    function createOrderForV6() {
+      return createOrderId().then((id) => ({ orderId: id }));
+    }
+
+    async function captureOrder(prefix, orderId) {
+      setStatus(prefix, "Capturing order…");
+      try {
+        const details = await apiJson("/api/orders/" + orderId + "/capture", { method: "POST" });
+        const completed = details.status === "COMPLETED";
+        setStatus(
+          prefix,
+          completed ? "Payment complete — order " + details.status + "." : "Order status: " + details.status,
+          completed
+        );
+        showResult(prefix, details, completed ? "success" : "");
+      } catch (error) {
+        setStatus(prefix, "Capture failed.");
+        showResult(prefix, describeError(error) + "\n" + JSON.stringify(error.details || {}, null, 2), "error");
+      }
+    }
+
+    function loadScript(src, namespace) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = src;
+        if (namespace) script.setAttribute("data-namespace", namespace);
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("Failed to load " + src));
+        document.head.appendChild(script);
+      });
+    }
+
+    // ------------------------------------------------------------------
+    // Basic Apple Pay — shared by both variants.
+    // Follows Basic Apple Pay Integration Guide v1.2, steps 3–9.
+    // ------------------------------------------------------------------
+    async function setUpApplePay({ prefix, sdkInstance, eligibility, currency }) {
+      const mark = document.getElementById(prefix + "-apple-pay-mark");
+      const button = document.getElementById(prefix + "-applepay-button");
+
+      // Step 4 — eligibility (already fetched by the caller so one
+      // findEligibleMethods() call covers every method in the variant).
+      const isEligible = eligibility.isEligible("basic_apple_pay");
+
+      // Step 5 — create the Basic Apple Pay payment session.
+      const session = sdkInstance.createBasicApplePayOneTimePaymentSession({
+        // Step 8 — capture on approval.
+        onApprove: async ({ orderId }) => {
+          await captureOrder(prefix, orderId);
+        },
+        // Step 9 — cancellation and errors.
+        onCancel: () => setStatus(prefix, "Apple Pay payment cancelled."),
+        onError: (error) => {
+          setStatus(prefix, "Apple Pay error.");
+          showResult(prefix, describeError(error), "error");
+        },
+      });
+
+      // Step 6 — confirm device/browser support. canMakePayments() loads
+      // Apple's own SDK on demand; it throws outright on a non-secure origin.
+      let canMakePayments = false;
+      let supportError = null;
+      try {
+        canMakePayments = await session.canMakePayments();
+      } catch (error) {
+        supportError = describeError(error);
+      }
+
+      // Step 6 (cont.) — only render the mark once both gates pass.
+      if (!isEligible || !canMakePayments) {
+        const reason = !isEligible
+          ? "Apple Pay is not eligible for this merchant/region in " + ENV + " " + currency + "."
+          : supportError
+          ? "Apple Pay is unavailable on this browser: " + supportError
+          : "Apple Pay is unavailable on this device/browser (needs Safari on a Mac or iOS device with a card in Wallet, over HTTPS).";
+
+        if (!FORCE_APPLE_PAY) {
+          setNote(prefix, reason + " Add ?force=1 to the URL to render it anyway for debugging.", "warn");
+          return;
+        }
+        setNote(prefix, "Forced visible (?force=1): " + reason, "warn");
+      }
+
+      // Step 7 — render the mark and a separate checkout button. The guide is
+      // explicit that the mark is display-only and checkout must be triggered
+      // by your own button.
+      mark.hidden = false;
+      button.hidden = false;
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        setStatus(prefix, "Opening Apple Pay…");
+        try {
+          // Not awaited before start() — passing the promise keeps start()
+          // synchronous with the user gesture so the sheet isn't blocked.
+          const checkoutSessionOptionsPromise = createOrderId().then((orderId) => ({ orderId }));
+          await session.start({}, checkoutSessionOptionsPromise);
+        } catch (error) {
+          setStatus(prefix, "Apple Pay could not start.");
+          showResult(prefix, describeError(error), "error");
+        } finally {
+          button.disabled = false;
+        }
+      });
+    }
+
+    // ------------------------------------------------------------------
+    // Variant A — v5 Buttons (PayPal + Card) alongside v6 Basic Apple Pay.
+    // Guide v1.2 §1.1: load both SDKs with data-namespace.
+    // ------------------------------------------------------------------
+    function renderV5(config) {
+      const v5 = window.paypalV5;
+
+      v5.Marks({ fundingSource: v5.FUNDING.PAYPAL }).render("#a-paypal-mark");
+      v5.Marks({ fundingSource: v5.FUNDING.CARD }).render("#a-card-mark");
+
+      const common = {
+        style: { height: 52 },
+        createOrder: () => createOrderId(),
+        onApprove: (data) => captureOrder("a", data.orderID),
+        onCancel: () => setStatus("a", "Payment cancelled."),
+        onError: (error) => {
+          setStatus("a", "Payment error.");
+          showResult("a", describeError(error), "error");
+        },
+      };
+
+      v5.Buttons(Object.assign({ fundingSource: v5.FUNDING.PAYPAL }, common)).render("#a-paypal-button");
+      v5.Buttons(Object.assign({ fundingSource: v5.FUNDING.CARD }, common)).render("#a-card-button");
+    }
+
+    async function initVariantA(config) {
+      renderV5(config);
+      setStatus("a", "");
+
+      // Step 2 — browser-safe client token for v6.
+      const { access_token: clientToken } = await apiJson("/api/client-token");
+
+      // Step 3 — SDK instance with only the applepay-payments component,
+      // since PayPal and Card are handled by v5 in this variant.
+      const sdkInstance = await window.paypalV6.createInstance({
+        clientToken,
+        clientMetadataId: crypto.randomUUID(),
+        components: ["applepay-payments"],
+      });
+
+      // Step 4 — eligibility, checked against this transaction's context.
+      const eligibility = await sdkInstance.findEligibleMethods({
+        currencyCode: config.currency,
+        countryCode: config.countryCode,
+        amount: AMOUNT,
+      });
+
+      await setUpApplePay({ prefix: "a", sdkInstance, eligibility, currency: config.currency });
+    }
+
+    // ------------------------------------------------------------------
+    // Variant B — v6 for PayPal, Card (guest) and Basic Apple Pay.
+    // ------------------------------------------------------------------
+    async function initVariantB(config) {
+      const { access_token: clientToken } = await apiJson("/api/client-token");
+
+      const sdkInstance = await window.paypalV6.createInstance({
+        clientToken,
+        clientMetadataId: crypto.randomUUID(),
+        components: ["paypal-payments", "paypal-guest-payments", "applepay-payments"],
+        pageType: "checkout",
+      });
+
+      const eligibility = await sdkInstance.findEligibleMethods({
+        currencyCode: config.currency,
+        countryCode: config.countryCode,
+        amount: AMOUNT,
+      });
+
+      setStatus("b", "");
+      const unavailable = [];
+
+      if (eligibility.isEligible("paypal")) {
+        document.getElementById("b-paypal-mark").hidden = false;
+        const button = document.getElementById("b-paypal-button");
+        button.hidden = false;
+
+        const paypalSession = sdkInstance.createPayPalOneTimePaymentSession({
+          onApprove: (data) => captureOrder("b", data.orderId),
+          onCancel: () => setStatus("b", "Payment cancelled."),
+          onError: (error) => {
+            setStatus("b", "Payment error.");
+            showResult("b", describeError(error), "error");
+          },
+        });
+
+        button.addEventListener("click", async () => {
+          setStatus("b", "Opening PayPal…");
+          try {
+            await paypalSession.start({ presentationMode: "auto" }, createOrderForV6());
+          } catch (error) {
+            setStatus("b", "PayPal checkout could not start.");
+            showResult("b", describeError(error), "error");
+          }
+        });
+      } else {
+        unavailable.push("PayPal");
+      }
+
+      if (eligibility.isEligible("card")) {
+        document.getElementById("b-card-mark").hidden = false;
+        document.getElementById("b-card-container").hidden = false;
+        const cardButton = document.getElementById("b-card-button");
+
+        const guestSession = await sdkInstance.createPayPalGuestOneTimePaymentSession({
+          onApprove: (data) => captureOrder("b", data.orderId),
+          onCancel: () => setStatus("b", "Payment cancelled."),
+          onError: (error) => {
+            setStatus("b", "Payment error.");
+            showResult("b", describeError(error), "error");
+          },
+        });
+
+        cardButton.addEventListener("click", async () => {
+          setStatus("b", "Opening card checkout…");
+          try {
+            await guestSession.start({ presentationMode: "auto" }, createOrderForV6());
+          } catch (error) {
+            setStatus("b", "Card checkout could not start.");
+            showResult("b", describeError(error), "error");
+          }
+        });
+      } else {
+        unavailable.push("Card");
+      }
+
+      await setUpApplePay({ prefix: "b", sdkInstance, eligibility, currency: config.currency });
+
+      if (unavailable.length) {
+        const existing = document.getElementById("b-note");
+        const prefixText = unavailable.join(" and ") + " not eligible for this merchant/currency.";
+        setNote("b", existing.hidden ? prefixText : prefixText + " " + existing.textContent, "warn");
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Boot
+    // ------------------------------------------------------------------
+    function renderContext(config) {
+      document.getElementById("summary-amount").textContent =
+        "S$" + AMOUNT;
+      document.getElementById("summary-currency").textContent = config.currency;
+
+      const banner = document.getElementById("env-banner");
+      banner.hidden = false;
+      banner.className = "env-banner " + (ENV === "live" ? "live" : "sandbox");
+      banner.innerHTML =
+        ENV === "live"
+          ? "<strong>Production environment — real money</strong>Completing a payment here captures S$" +
+            AMOUNT +
+            " " +
+            config.currency +
+            " for real. Client ID <code>" +
+            config.clientId.slice(0, 10) +
+            "…</code>"
+          : "<strong>Sandbox environment</strong>No real money moves. Client ID <code>" +
+            config.clientId.slice(0, 10) +
+            "…</code>";
+    }
+
+    async function main() {
+      let config;
+      try {
+        config = await apiJson("/api/config");
+      } catch (error) {
+        setStatus("a", "");
+        setStatus("b", "");
+        const message = "Could not load configuration for the " + ENV + " environment: " + describeError(error);
+        showResult("a", message, "error");
+        showResult("b", message, "error");
+        return;
+      }
+
+      renderContext(config);
+      document.title = "PayPal Checkout — " + (ENV === "live" ? "Production" : "Sandbox");
+
+      try {
+        await Promise.all([
+          // v5 takes the client ID in the script URL; the client ID decides the
+          // environment, so the host is www.paypal.com either way.
+          loadScript(
+            "https://www.paypal.com/sdk/js?client-id=" +
+              encodeURIComponent(config.clientId) +
+              "&currency=" +
+              config.currency +
+              "&intent=capture&components=buttons,marks",
+            "paypalV5"
+          ),
+          // v6 core + brand come from the host matching the environment.
+          loadScript(config.sdkHost + "/web-sdk/v6/core", "paypalV6"),
+          loadScript(config.sdkHost + "/web-sdk/v6/brand"),
+        ]);
+      } catch (error) {
+        const message = "Failed to load the PayPal SDKs: " + describeError(error);
+        setStatus("a", "");
+        setStatus("b", "");
+        showResult("a", message, "error");
+        showResult("b", message, "error");
+        return;
+      }
+
+      // Each variant is isolated: a failure in one must not take down the other.
+      initVariantA(config).catch((error) => {
+        setStatus("a", "");
+        showResult("a", "Variant A failed to initialise: " + describeError(error), "error");
+      });
+
+      initVariantB(config).catch((error) => {
+        setStatus("b", "");
+        showResult("b", "Variant B failed to initialise: " + describeError(error), "error");
+      });
+    }
+
+    main();
+  </script>
+</body>
+</html>

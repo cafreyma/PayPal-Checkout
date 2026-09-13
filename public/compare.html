@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PayPal Standard Checkout — v5 vs v6</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 4px; }
+    p.subtitle { color: #666; margin-top: 0; }
+    section {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+    section header {
+      background: #fafafa;
+      border-bottom: 1px solid #ddd;
+      padding: 12px 20px;
+    }
+    section header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    section header h2 .badge {
+      display: inline-block;
+      min-width: 1.6em;
+      margin-right: 8px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: #0070ba;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      vertical-align: middle;
+    }
+    section header code {
+      display: block;
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 2px;
+    }
+    iframe {
+      width: 100%;
+      height: 100px;
+      border: none;
+      display: block;
+      transition: height 0.15s ease;
+    }
+  </style>
+</head>
+<body>
+  <h1>PayPal Standard Checkout</h1>
+  <p class="subtitle">Legacy page — the same S$0.10 SGD sandbox order, rendered with each JS SDK version. <a href="/">Back to the checkout demo</a></p>
+
+  <section>
+    <header>
+      <h2><span class="badge">01</span>JS SDK v5 — Buttons only (PayPal + Card)</h2>
+      <code>components=buttons → paypal.Buttons() with no fundingSource renders the full smart button set</code>
+    </header>
+    <iframe src="/v5.html" title="JS SDK v5 checkout"></iframe>
+  </section>
+
+  <section>
+    <header>
+      <h2><span class="badge">02</span>JS SDK v6 — Web Components</h2>
+      <code>https://www.paypal.com/web-sdk/v6/core → createInstance() → findEligibleMethods()</code>
+    </header>
+    <iframe src="/v6.html" title="JS SDK v6 checkout"></iframe>
+  </section>
+
+  <section>
+    <header>
+      <h2><span class="badge">03</span>JS SDK v6 — PayPal Button + Card Fields</h2>
+      <code>components: ["paypal-payments", "card-fields"] → createCardFieldsOneTimePaymentSession()</code>
+    </header>
+    <iframe src="/v6-card-fields.html" title="JS SDK v6 checkout with card fields"></iframe>
+  </section>
+
+  <section>
+    <header>
+      <h2><span class="badge">04</span>JS SDK v6 — Radio: PayPal or Card (custom icons)</h2>
+      <code>components: ["paypal-payments", "card-fields"] → radio toggles which session's UI is shown; no v6 marks component exists, so icons are custom SVGs</code>
+    </header>
+    <iframe src="/v6-radio.html" title="JS SDK v6 checkout with radio-selected payment method"></iframe>
+  </section>
+
+  <section>
+    <header>
+      <h2><span class="badge">05</span>JS SDK v6 — Basic Apple Pay</h2>
+      <code>components: ["applepay-payments"] → createBasicApplePayOneTimePaymentSession()</code>
+    </header>
+    <iframe src="/v6-apple-pay.html" title="JS SDK v6 Basic Apple Pay checkout"></iframe>
+  </section>
+
+  <section>
+    <header>
+      <h2><span class="badge">06</span>JS SDK v5 Radio (PayPal + Card) + Basic Apple Pay (v6), with real Marks</h2>
+      <code>data-namespace="paypalV5"/"paypalV6" → paypal.Marks() for PayPal/Card, &lt;apple-pay-mark&gt; for Apple Pay, next to each radio</code>
+    </header>
+    <iframe src="/v5-applepay.html" title="JS SDK v5 button with Basic Apple Pay"></iframe>
+  </section>
+
+  <section>
+    <header>
+      <h2><span class="badge">07</span>JS SDK v6 Radio (PayPal + Card) + Basic Apple Pay</h2>
+      <code>components: ["paypal-payments", "card-fields", "applepay-payments"] → radio toggles which session's UI is shown; real &lt;apple-pay-mark&gt;, custom icons for PayPal/Card</code>
+    </header>
+    <iframe src="/v6-radio-applepay.html" title="JS SDK v6 radio checkout with Basic Apple Pay"></iframe>
+  </section>
+
+  <section>
+    <header>
+      <h2><span class="badge">08</span>JS SDK v5 Buttons (PayPal + Card) + Basic Apple Pay (v6)</h2>
+      <code>No radio — marks row (PayPal/Card via v5 paypal.Marks(), Apple Pay via &lt;apple-pay-mark&gt;) above all three buttons, shown upfront</code>
+    </header>
+    <iframe src="/v5-applepay-buttons.html" title="JS SDK v5 buttons with Basic Apple Pay"></iframe>
+  </section>
+
+  <section>
+    <header>
+      <h2><span class="badge">09</span>JS SDK v6 Web Components + Basic Apple Pay</h2>
+      <code>components: ["paypal-payments", "paypal-guest-payments", "applepay-payments"] → marks row (custom icons + &lt;apple-pay-mark&gt;) above the three buttons</code>
+    </header>
+    <iframe src="/v6-applepay.html" title="JS SDK v6 checkout with Basic Apple Pay"></iframe>
+  </section>
+
+  <section>
+    <header>
+      <h2><span class="badge">10</span>JS SDK v6 PayPal Button + Card Fields + Basic Apple Pay</h2>
+      <code>components: ["paypal-payments", "card-fields", "applepay-payments"] → marks row (custom icons + &lt;apple-pay-mark&gt;) above the three buttons</code>
+    </header>
+    <iframe src="/v6-card-fields-applepay.html" title="JS SDK v6 checkout with card fields and Basic Apple Pay"></iframe>
+  </section>
+
+  <section>
+    <header>
+      <h2><span class="badge">11</span>Payment Links and Buttons</h2>
+      <code>components=hosted-buttons → paypal.HostedButtons({ hostedButtonId }).render() — PayPal-hosted, no /api/orders calls</code>
+    </header>
+    <iframe src="/v11-hosted-button.html" title="PayPal Hosted Buttons checkout"></iframe>
+  </section>
+
+  <script>
+    window.addEventListener("message", (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (!event.data || event.data.type !== "checkout-demo-resize") return;
+      document.querySelectorAll("iframe").forEach((frame) => {
+        if (frame.contentWindow === event.source) {
+          frame.style.height = `${event.data.height}px`;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

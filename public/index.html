@@ -2,161 +2,326 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>PayPal Standard Checkout — v5 vs v6</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PayPal Checkout Demo — Choose Environment</title>
   <style>
+    :root {
+      --ink: #12161c;
+      --muted: #667085;
+      --line: #dfe3e8;
+      --brand: #0070ba;
+      --brand-dark: #005a96;
+      --danger: #b42318;
+      --danger-bg: #fef3f2;
+      --danger-line: #fda29b;
+    }
+    * { box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      max-width: 720px;
-      margin: 40px auto;
-      padding: 0 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--ink);
+      background: #f6f7f9;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 40px 20px 60px;
+      line-height: 1.5;
     }
-    h1 { font-size: 1.4rem; margin-bottom: 4px; }
-    p.subtitle { color: #666; margin-top: 0; }
-    section {
-      border: 1px solid #ddd;
+    h1 { font-size: 1.5rem; margin: 0 0 4px; }
+    p.subtitle { color: var(--muted); margin: 0 0 28px; }
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    fieldset { border: 0; margin: 0; padding: 0; }
+    legend {
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0;
+      margin-bottom: 4px;
+    }
+    .hint { color: var(--muted); font-size: 0.85rem; margin: 0 0 16px; }
+    .env-options { display: grid; gap: 12px; }
+    .env-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .env-option:hover { border-color: #b9c0c9; }
+    .env-option:has(input:checked) {
+      border-color: var(--brand);
+      background: #f2f9fd;
+      box-shadow: inset 0 0 0 1px var(--brand);
+    }
+    .env-option input { margin-top: 4px; flex-shrink: 0; }
+    .env-option strong { display: block; font-size: 0.95rem; }
+    .env-option span { color: var(--muted); font-size: 0.85rem; }
+    .env-option.live:has(input:checked) {
+      border-color: var(--danger);
+      background: var(--danger-bg);
+      box-shadow: inset 0 0 0 1px var(--danger);
+    }
+    .amount-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .amount-field {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--line);
       border-radius: 8px;
-      margin-bottom: 32px;
-      overflow: hidden;
+      padding: 0 12px;
+      background: #fff;
+      flex-shrink: 0;
     }
-    section header {
-      background: #fafafa;
-      border-bottom: 1px solid #ddd;
-      padding: 12px 20px;
+    .amount-field:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(0,112,186,0.15); }
+    .amount-field .prefix { color: var(--muted); font-size: 0.95rem; }
+    #amount {
+      border: 0;
+      outline: 0;
+      font: inherit;
+      font-size: 1.05rem;
+      width: 80px;
+      padding: 10px 4px;
+      text-align: right;
+      background: transparent;
     }
-    section header h2 {
-      margin: 0;
-      font-size: 1.1rem;
+    #amount::-webkit-outer-spin-button,
+    #amount::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    #amount { -moz-appearance: textfield; }
+    .amount-field .suffix { color: var(--muted); font-size: 0.95rem; font-weight: 600; }
+    #amount-slider { flex: 1; accent-color: var(--brand); min-width: 0; }
+    .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .preset {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+      padding: 5px 12px;
+      font: inherit;
+      font-size: 0.85rem;
+      color: var(--muted);
+      cursor: pointer;
     }
-    section header h2 .badge {
-      display: inline-block;
-      min-width: 1.6em;
-      margin-right: 8px;
-      padding: 1px 6px;
-      border-radius: 4px;
-      background: #0070ba;
-      color: #fff;
-      font-size: 0.75rem;
-      font-weight: 700;
-      font-family: "SFMono-Regular", Consolas, monospace;
-      vertical-align: middle;
+    .preset:hover { border-color: var(--brand); color: var(--brand); }
+    #amount-error {
+      color: var(--danger);
+      font-size: 0.85rem;
+      margin: 10px 0 0;
+      min-height: 1.2em;
     }
-    section header code {
-      display: block;
-      font-size: 0.75rem;
-      color: #888;
-      margin-top: 2px;
+    #live-warning {
+      display: none;
+      border: 1px solid var(--danger-line);
+      background: var(--danger-bg);
+      color: var(--danger);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.875rem;
+      margin-bottom: 20px;
     }
-    iframe {
+    #live-warning strong { display: block; margin-bottom: 2px; }
+    button.primary {
       width: 100%;
-      height: 100px;
-      border: none;
-      display: block;
-      transition: height 0.15s ease;
+      border: 0;
+      border-radius: 10px;
+      background: var(--brand);
+      color: #fff;
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 14px;
+      cursor: pointer;
     }
+    button.primary:hover { background: var(--brand-dark); }
+    button.primary:disabled { background: #9aa4b0; cursor: not-allowed; }
+    body:has(.env-option.live input:checked) button.primary { background: var(--danger); }
+    body:has(.env-option.live input:checked) button.primary:hover { background: #8f1d13; }
+    .product {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding-bottom: 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .product h2 { margin: 0; font-size: 1rem; }
+    .product p { margin: 2px 0 0; color: var(--muted); font-size: 0.85rem; }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 28px;
+    }
+    footer a { color: var(--muted); }
   </style>
 </head>
 <body>
-  <h1>PayPal Standard Checkout</h1>
-  <p class="subtitle">Same $10 USD sandbox order, rendered with each JS SDK version.</p>
+  <h1>PayPal Checkout Demo</h1>
+  <p class="subtitle">
+    PayPal, Credit&nbsp;/&nbsp;Debit&nbsp;Card and Basic Apple Pay, built twice —
+    once with JS&nbsp;SDK&nbsp;v5&nbsp;+&nbsp;v6, once with v6 only.
+  </p>
 
-  <section>
-    <header>
-      <h2><span class="badge">01</span>JS SDK v5 — Buttons only (PayPal + Card)</h2>
-      <code>components=buttons → paypal.Buttons() with no fundingSource renders the full smart button set</code>
-    </header>
-    <iframe src="/v5.html" title="JS SDK v5 checkout"></iframe>
-  </section>
+  <form class="card" id="setup-form" novalidate>
+    <div class="product">
+      <svg width="56" height="56" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="T-shirt">
+        <rect width="100" height="100" rx="16" fill="#eef2fb" />
+        <path d="M35 12 L50 20 L65 12 L82 22 L74 38 L66 34 L66 88 L34 88 L34 34 L26 38 L18 22 Z"
+              fill="#5b8def" stroke="#2f5fc4" stroke-width="2" stroke-linejoin="round" />
+      </svg>
+      <div>
+        <h2>Classic Cotton Tee</h2>
+        <p>Priced by you, charged in SGD</p>
+      </div>
+    </div>
 
-  <section>
-    <header>
-      <h2><span class="badge">02</span>JS SDK v6 — Web Components</h2>
-      <code>https://www.paypal.com/web-sdk/v6/core → createInstance() → findEligibleMethods()</code>
-    </header>
-    <iframe src="/v6.html" title="JS SDK v6 checkout"></iframe>
-  </section>
+    <fieldset>
+      <legend>1. Which environment do you want to test in?</legend>
+      <p class="hint">This picks the credentials, the Orders API host and the JS SDK host.</p>
+      <div class="env-options">
+        <label class="env-option">
+          <input type="radio" name="env" value="sandbox" checked />
+          <div>
+            <strong>Sandbox</strong>
+            <span>Test money only. Uses the sandbox client ID &amp; secret.</span>
+          </div>
+        </label>
+        <label class="env-option live">
+          <input type="radio" name="env" value="live" />
+          <div>
+            <strong>Production</strong>
+            <span>Real money. Captures move real funds from your funding source.</span>
+          </div>
+        </label>
+      </div>
+    </fieldset>
 
-  <section>
-    <header>
-      <h2><span class="badge">03</span>JS SDK v6 — PayPal Button + Card Fields</h2>
-      <code>components: ["paypal-payments", "card-fields"] → createCardFieldsOneTimePaymentSession()</code>
-    </header>
-    <iframe src="/v6-card-fields.html" title="JS SDK v6 checkout with card fields"></iframe>
-  </section>
+    <fieldset style="margin-top: 26px;">
+      <legend>2. How much should the transaction be?</legend>
+      <p class="hint">Between S$0.01 and S$10.00.</p>
+      <div class="amount-row">
+        <div class="amount-field">
+          <span class="prefix">S$</span>
+          <input id="amount" name="amount" type="number" inputmode="decimal"
+                 min="0.01" max="10.00" step="0.01" value="0.10" />
+          <span class="suffix">SGD</span>
+        </div>
+        <input id="amount-slider" type="range" min="1" max="1000" step="1" value="10"
+               aria-label="Transaction amount" />
+      </div>
+      <div class="presets">
+        <button type="button" class="preset" data-amount="0.01">S$0.01</button>
+        <button type="button" class="preset" data-amount="0.10">S$0.10</button>
+        <button type="button" class="preset" data-amount="1.00">S$1.00</button>
+        <button type="button" class="preset" data-amount="5.00">S$5.00</button>
+        <button type="button" class="preset" data-amount="10.00">S$10.00</button>
+      </div>
+      <p id="amount-error" role="alert"></p>
+    </fieldset>
+  </form>
 
-  <section>
-    <header>
-      <h2><span class="badge">04</span>JS SDK v6 — Radio: PayPal or Card (custom icons)</h2>
-      <code>components: ["paypal-payments", "card-fields"] → radio toggles which session's UI is shown; no v6 marks component exists, so icons are custom SVGs</code>
-    </header>
-    <iframe src="/v6-radio.html" title="JS SDK v6 checkout with radio-selected payment method"></iframe>
-  </section>
+  <div id="live-warning">
+    <strong>Production selected</strong>
+    Any payment you approve on the next page is a real charge against the live account.
+  </div>
 
-  <section>
-    <header>
-      <h2><span class="badge">05</span>JS SDK v6 — Basic Apple Pay</h2>
-      <code>components: ["applepay-payments"] → createBasicApplePayOneTimePaymentSession()</code>
-    </header>
-    <iframe src="/v6-apple-pay.html" title="JS SDK v6 Basic Apple Pay checkout"></iframe>
-  </section>
+  <button type="submit" form="setup-form" class="primary" id="continue">
+    Continue to checkout
+  </button>
 
-  <section>
-    <header>
-      <h2><span class="badge">06</span>JS SDK v5 Radio (PayPal + Card) + Basic Apple Pay (v6), with real Marks</h2>
-      <code>data-namespace="paypalV5"/"paypalV6" → paypal.Marks() for PayPal/Card, &lt;apple-pay-mark&gt; for Apple Pay, next to each radio</code>
-    </header>
-    <iframe src="/v5-applepay.html" title="JS SDK v5 button with Basic Apple Pay"></iframe>
-  </section>
-
-  <section>
-    <header>
-      <h2><span class="badge">07</span>JS SDK v6 Radio (PayPal + Card) + Basic Apple Pay</h2>
-      <code>components: ["paypal-payments", "card-fields", "applepay-payments"] → radio toggles which session's UI is shown; real &lt;apple-pay-mark&gt;, custom icons for PayPal/Card</code>
-    </header>
-    <iframe src="/v6-radio-applepay.html" title="JS SDK v6 radio checkout with Basic Apple Pay"></iframe>
-  </section>
-
-  <section>
-    <header>
-      <h2><span class="badge">08</span>JS SDK v5 Buttons (PayPal + Card) + Basic Apple Pay (v6)</h2>
-      <code>No radio — marks row (PayPal/Card via v5 paypal.Marks(), Apple Pay via &lt;apple-pay-mark&gt;) above all three buttons, shown upfront</code>
-    </header>
-    <iframe src="/v5-applepay-buttons.html" title="JS SDK v5 buttons with Basic Apple Pay"></iframe>
-  </section>
-
-  <section>
-    <header>
-      <h2><span class="badge">09</span>JS SDK v6 Web Components + Basic Apple Pay</h2>
-      <code>components: ["paypal-payments", "paypal-guest-payments", "applepay-payments"] → marks row (custom icons + &lt;apple-pay-mark&gt;) above the three buttons</code>
-    </header>
-    <iframe src="/v6-applepay.html" title="JS SDK v6 checkout with Basic Apple Pay"></iframe>
-  </section>
-
-  <section>
-    <header>
-      <h2><span class="badge">10</span>JS SDK v6 PayPal Button + Card Fields + Basic Apple Pay</h2>
-      <code>components: ["paypal-payments", "card-fields", "applepay-payments"] → marks row (custom icons + &lt;apple-pay-mark&gt;) above the three buttons</code>
-    </header>
-    <iframe src="/v6-card-fields-applepay.html" title="JS SDK v6 checkout with card fields and Basic Apple Pay"></iframe>
-  </section>
-
-  <section>
-    <header>
-      <h2><span class="badge">11</span>Payment Links and Buttons</h2>
-      <code>components=hosted-buttons → paypal.HostedButtons({ hostedButtonId }).render() — PayPal-hosted, no /api/orders calls</code>
-    </header>
-    <iframe src="/v11-hosted-button.html" title="PayPal Hosted Buttons checkout"></iframe>
-  </section>
+  <footer>
+    <a href="/compare.html">Older v5 vs v6 comparison page →</a>
+  </footer>
 
   <script>
-    window.addEventListener("message", (event) => {
-      if (event.origin !== window.location.origin) return;
-      if (!event.data || event.data.type !== "checkout-demo-resize") return;
-      document.querySelectorAll("iframe").forEach((frame) => {
-        if (frame.contentWindow === event.source) {
-          frame.style.height = `${event.data.height}px`;
-        }
+    const MIN = 0.01;
+    const MAX = 10.0;
+
+    const form = document.getElementById("setup-form");
+    const amountInput = document.getElementById("amount");
+    const slider = document.getElementById("amount-slider");
+    const errorEl = document.getElementById("amount-error");
+    const continueBtn = document.getElementById("continue");
+    const liveWarning = document.getElementById("live-warning");
+
+    // The slider works in whole cents so it can span 0.01–10.00 exactly.
+    function centsOf(value) {
+      return Math.round(value * 100);
+    }
+
+    function readAmount() {
+      const value = Number.parseFloat(amountInput.value);
+      if (!Number.isFinite(value)) return null;
+      const rounded = Math.round(value * 100) / 100;
+      if (rounded < MIN || rounded > MAX) return null;
+      return rounded;
+    }
+
+    function validate() {
+      const amount = readAmount();
+      if (amount === null) {
+        errorEl.textContent = "Enter an amount between S$0.01 and S$10.00.";
+        continueBtn.disabled = true;
+        return null;
+      }
+      errorEl.textContent = "";
+      continueBtn.disabled = false;
+      return amount;
+    }
+
+    amountInput.addEventListener("input", () => {
+      const amount = validate();
+      if (amount !== null) slider.value = String(centsOf(amount));
+    });
+
+    amountInput.addEventListener("blur", () => {
+      const amount = readAmount();
+      if (amount !== null) amountInput.value = amount.toFixed(2);
+    });
+
+    slider.addEventListener("input", () => {
+      amountInput.value = (Number(slider.value) / 100).toFixed(2);
+      validate();
+    });
+
+    document.querySelectorAll(".preset").forEach((button) => {
+      button.addEventListener("click", () => {
+        amountInput.value = button.dataset.amount;
+        slider.value = String(centsOf(Number(button.dataset.amount)));
+        validate();
       });
     });
+
+    function selectedEnv() {
+      return form.querySelector('input[name="env"]:checked').value;
+    }
+
+    form.querySelectorAll('input[name="env"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        liveWarning.style.display = selectedEnv() === "live" ? "block" : "none";
+      });
+    });
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const amount = validate();
+      if (amount === null) return;
+      const params = new URLSearchParams({
+        env: selectedEnv(),
+        amount: amount.toFixed(2),
+      });
+      window.location.href = `/checkout.html?${params.toString()}`;
+    });
+
+    validate();
   </script>
 </body>
 </html>

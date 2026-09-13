@@ -127,7 +127,7 @@
     </svg>
     <div class="product-info">
       <h2>Classic Cotton Tee</h2>
-      <p>$10.00 USD</p>
+      <p>S$0.10 SGD</p>
     </div>
   </div>
 
@@ -271,7 +271,7 @@
       // NOTE: forced visible for demo purposes even when isEligible() fails —
       // normally you should return early here and not render the button/mark.
       const eligibility = await sdkInstance.findEligibleMethods({
-        currencyCode: "USD",
+        currencyCode: "SGD",
       });
       if (!eligibility.isEligible("basic_apple_pay")) {
         setApplePayNote("Apple Pay is not eligible for this merchant/currency in sandbox (forced visible for demo).");
@@ -322,7 +322,7 @@
       const { clientId } = await configRes.json();
 
       await Promise.all([
-        loadScript(`https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&components=buttons,marks`, "paypalV5"),
+        loadScript(`https://www.paypal.com/sdk/js?client-id=${clientId}&currency=SGD&components=buttons,marks`, "paypalV5"),
         loadScript("https://www.sandbox.paypal.com/web-sdk/v6/core", "paypalV6"),
         loadScript("https://www.sandbox.paypal.com/web-sdk/v6/brand"),
       ]);
